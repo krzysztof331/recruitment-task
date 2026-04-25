@@ -1,0 +1,54 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: prestashop
+      MYSQL_USER: prestashop
+      MYSQL_PASSWORD: prestashop
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  prestashop:
+    image: prestashop/prestashop:9.1.0
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    environment:
+      DB_SERVER: mysql
+      DB_NAME: prestashop
+      DB_USER: prestashop
+      DB_PASSWD: prestashop
+      DB_PREFIX: ps_
+      PS_DOMAIN: localhost:8080
+      PS_LANGUAGE: pl
+      PS_COUNTRY: pl
+      PS_INSTALL_AUTO: 1
+      ADMIN_MAIL: admin@example.com
+      ADMIN_PASSWD: admin123456
+    volumes:
+      - prestashop_data:/var/www/html
+      - ./modules/lowestshippingcost:/var/www/html/modules/lowestshippingcost
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+
+volumes:
+  mysql_data:
+  prestashop_data:
